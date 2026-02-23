@@ -47,3 +47,17 @@ class WORKER:
     def display_info(self):
         print(f"Фамилия: {self._surname} | Инициалы: {self._initials} | Должность: {self._position} | "
               f"Зарплата: {self._salary} | Год поступления: {self._year_joined}")
+
+    # Метод для преобразования объекта в словарь (для JSON)
+    def to_dict(self):
+        return {
+            "surname": self._surname,
+            "initials": self._initials,
+            "position": self._position,
+            "salary": self._salary,
+            "year_joined": self._year_joined
+        }
+
+    @staticmethod
+    def from_dict(data):
+        return WORKER(data['surname'], data['initials'], data['position'], data['salary'], data['year_joined'])

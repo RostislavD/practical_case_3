@@ -1,49 +1,88 @@
+import json
+import os
+
 from worker_module import WORKER
+
+DB_FILE = "workers.json"
+
+
+def load_data():
+    """Загрузка списка сотрудников из JSON файла"""
+    if not os.path.exists(DB_FILE):
+        return []
+    try:
+        with open(DB_FILE, 'r', encoding='utf-8') as f:
+            data_list = json.load(f)
+            return [WORKER.from_dict(item) for item in data_list]
+    except (json.JSONDecodeError, KeyError):
+        return []
+
+
+def save_data(workers):
+    """Сохранение списка сотрудников в JSON файл"""
+    with open(DB_FILE, 'w', encoding='utf-8') as f:
+        json.dump([w.to_dict() for w in workers], f, ensure_ascii=False, indent=4)
 
 
 def main():
-    workers_list = []
+    # 1. Загрузка данных из прошлых сессий
+    workers_list = load_data()
+    while True:
+        print("\n--- СИСТЕМА УПРАВЛЕНИЯ ПЕРСОНАЛОМ ---")
+        print("1. Ввести новых сотрудников")
+        print("2. Вывести список сотрудников по стажу")
+        print("3. Показать всех сотрудников")
+        print("0. Выход")
 
-    print("--- Учет персонала Университета 'Синергия' ---")
+        choice = input("\nВыберите действие: ")
 
-    try:
-        count = int(input("Введите количество сотрудников для добавления: "))
-    except ValueError:
-        print("Ошибка: введите число.")
-        return
+        if choice == '1':
+            try:
+                count = int(input("Сколько сотрудников добавить? "))
+                for i in range(count):
+                    print(f"\nСотрудник №{len(workers_list) + 1}:")
+                    surname = input("Введите фамилию: ")
+                    initials = input("Введите инициалы: ")
+                    pos = input("Введите название должности: ")
+                    sal = float(input("Зарплата: "))
+                    year = int(input("Год поступления: "))
 
-    # Ввод данных
-    for i in range(count):
-        print(f"\nЗаполнение данных сотрудника №{i + 1}:")
-        surname = input("Введите фамилию: ")
-        initials = input("Введите инициалы: ")
-        pos = input("Введите название должности: ")
-        try:
-            sal = float(input("Введите зарплату: "))
-            year = int(input("Введите год поступления на работу: "))
+                    workers_list.append(WORKER(surname, initials, pos, sal, year))
 
-            # Создание объекта и добавление в список
-            new_worker = WORKER(surname, initials, pos, sal, year)
-            workers_list.append(new_worker)
-        except ValueError:
-            print("Ошибка ввода числовых данных. Сотрудник не добавлен.")
+                # Сохраняем сразу после ввода
+                save_data(workers_list)
+                print("\nДанные успешно сохранены!")
+            except ValueError:
+                print("Ошибка: некорректный формат данных.")
 
-    # Вывод по стажу
-    try:
-        target_exp = int(input("\nВведите минимальный стаж работы для поиска: "))
-        print(f"\nФамилии сотрудников со стажем более {target_exp} лет:")
+        elif choice == '2':
+            if not workers_list:
+                print("Список пуст. Сначала добавьте данные.")
+                continue
 
-        found = False
-        for worker in workers_list:
-            if worker.get_experience() > target_exp:
-                print(worker.get_surname())
-                found = True
+            try:
+                target_exp = int(input("Введите минимальный стаж: "))
+                print(f"\nСотрудники со стажем более {target_exp} лет:")
+                found = False
+                for w in workers_list:
+                    if w.get_experience() > target_exp:
+                        print(f"- {w.get_surname()} (Стаж: {w.get_experience()} лет)")
+                        found = True
+                if not found:
+                    print("Таких работников нет.")
+            except ValueError:
+                print("Ошибка: стаж должен быть числом.")
 
-        if not found:
-            print("Таких работников нет.")
+        elif choice == '3':
+            print("\nВесь список сотрудников:")
+            for w in workers_list:
+                w.display_info()
 
-    except ValueError:
-        print("Ошибка: стаж должен быть целым числом.")
+        elif choice == '0':
+            print("Завершение работы.")
+            break
+        else:
+            print("Неверный ввод, попробуйте снова.")
 
 
 if __name__ == "__main__":
